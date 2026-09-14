@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Air Quality Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+    <!-- HEADER -->
+
+    <header>
+
+        <h1>🌫️ Air Quality Dashboard</h1>
+
+        <p>
+            AI-based environmental monitoring
+            and prediction system
+        </p>
+
+    </header>
+
+
+    <!-- SUMMARY CARDS -->
+
+    <div class="dashboard-grid">
+
+
+        <div class="dashboard-card">
+
+            <h3>Total Predictions</h3>
+
+            <div class="dashboard-number">
+
+                {{ total_predictions }}
+
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h3>Latest AQI</h3>
+
+            <div class="dashboard-number">
+
+                {% if predictions %}
+
+                    {{ predictions[0]["predicted_aqi"] }}
+
+                {% else %}
+
+                    --
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-card">
+
+            <h3>Latest Category</h3>
+
+            <div class="dashboard-category">
+
+                {% if predictions %}
+
+                    {{ predictions[0]["category"] }}
+
+                {% else %}
+
+                    --
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- ENVIRONMENTAL VALUES -->
+
+    {% if predictions %}
+
+    <div class="card">
+
+        <h2>Latest Environmental Readings</h2>
+
+
+        <div class="dashboard-grid">
+
+
+            <div class="parameter-card">
+
+                <h3>PM2.5</h3>
+
+                <p>
+                    {{ predictions[0]["pm25"] }}
+                </p>
+
+            </div>
+
+
+            <div class="parameter-card">
+
+                <h3>PM10</h3>
+
+                <p>
+                    {{ predictions[0]["pm10"] }}
+                </p>
+
+            </div>
+
+
+            <div class="parameter-card">
+
+                <h3>NO₂</h3>
+
+                <p>
+                    {{ predictions[0]["no2"] }}
+                </p>
+
+            </div>
+
+
+            <div class="parameter-card">
+
+                <h3>SO₂</h3>
+
+                <p>
+                    {{ predictions[0]["so2"] }}
+                </p>
+
+            </div>
+
+
+            <div class="parameter-card">
+
+                <h3>CO</h3>
+
+                <p>
+                    {{ predictions[0]["co"] }}
+                </p>
+
+            </div>
+
+
+            <div class="parameter-card">
+
+                <h3>O₃</h3>
+
+                <p>
+                    {{ predictions[0]["o3"] }}
+                </p>
+
+            </div>
+
+
+            <div class="parameter-card">
+
+                <h3>Temperature</h3>
+
+                <p>
+                    {{ predictions[0]["temperature"] }} °C
+                </p>
+
+            </div>
+
+
+            <div class="parameter-card">
+
+                <h3>Humidity</h3>
+
+                <p>
+                    {{ predictions[0]["humidity"] }} %
+                </p>
+
+            </div>
+
+
+            <div class="parameter-card">
+
+                <h3>Wind Speed</h3>
+
+                <p>
+                    {{ predictions[0]["wind_speed"] }} m/s
+                </p>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+    {% endif %}
+
+
+    <!-- AQI CHART -->
+
+    <div class="card">
+
+        <h2>📈 AQI Prediction History</h2>
+
+        <canvas id="aqiChart"></canvas>
+
+    </div>
+
+
+    <!-- HISTORY TABLE -->
+
+    <div class="card">
+
+        <h2>📋 Prediction History</h2>
+
+
+        {% if predictions %}
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>Date & Time</th>
+
+                        <th>PM2.5</th>
+
+                        <th>PM10</th>
+
+                        <th>Temperature</th>
+
+                        <th>Humidity</th>
+
+                        <th>AQI</th>
+
+                        <th>Category</th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                {% for row in predictions %}
+
+                    <tr>
+
+                        <td>
+                            {{ row["timestamp"] }}
+                        </td>
+
+                        <td>
+                            {{ row["pm25"] }}
+                        </td>
+
+                        <td>
+                            {{ row["pm10"] }}
+                        </td>
+
+                        <td>
+                            {{ row["temperature"] }} °C
+                        </td>
+
+                        <td>
+                            {{ row["humidity"] }} %
+                        </td>
+
+                        <td>
+                            {{ row["predicted_aqi"] }}
+                        </td>
+
+                        <td>
+                            {{ row["category"] }}
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        {% else %}
+
+            <p>No predictions available yet.</p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- BACK TO PREDICTION -->
+
+    <div class="back-button">
+
+        <a href="/">
+            ← Back to Prediction
+        </a>
+
+    </div>
+
+
+</div>
+
+
+<!-- CHART -->
+
+<script>
+
+    const aqiValues = [
+
+        {% for row in predictions|reverse %}
+
+            {{ row["predicted_aqi"] }},
+
+        {% endfor %}
+
+    ];
+
+
+    const labels = [
+
+        {% for row in predictions|reverse %}
+
+            "{{ row["timestamp"] }}",
+
+        {% endfor %}
+
+    ];
+
+
+    const ctx =
+        document
+        .getElementById("aqiChart")
+        .getContext("2d");
+
+
+    new Chart(
+        ctx,
+        {
+
+            type: "line",
+
+            data: {
+
+                labels: labels,
+
+                datasets: [
+
+                    {
+
+                        label: "Predicted AQI",
+
+                        data: aqiValues,
+
+                        borderWidth: 3,
+
+                        tension: 0.3,
+
+                        fill: false
+
+                    }
+
+                ]
+
+            },
+
+            options: {
+
+                responsive: true,
+
+                plugins: {
+
+                    legend: {
+
+                        display: true
+
+                    }
+
+                },
+
+                scales: {
+
+                    y: {
+
+                        beginAtZero: true,
+
+                        title: {
+
+                            display: true,
+
+                            text: "AQI"
+
+                        }
+
+                    },
+
+                    x: {
+
+                        title: {
+
+                            display: true,
+
+                            text: "Prediction Time"
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        }
+
+    );
+
+</script>
+
+
+</body>
+
+</html>
